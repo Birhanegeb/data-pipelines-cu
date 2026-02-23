@@ -18,9 +18,7 @@ import requests
 
 import pandas as pd
 from airflow import DAG
-from airflow.operators.python import PythonOperator
-
-
+from airflow.operators.python import PythonOperator # type: ignore
 def _fetch_binance_price(**context):
     """
     Fetches Bitcoin price from Binance API and saves to CSV.
@@ -55,7 +53,7 @@ def _fetch_binance_price(**context):
         hour_str = datetime.now().strftime('%H')
         minute_str = datetime.now().strftime('%M')
         
-        output_dir = Path(f"/data/binance/raw/{date_str}")
+        output_dir = Path.home() / "airflow_data/binance/raw" / date_str
         output_dir.mkdir(parents=True, exist_ok=True)
         
         # Save individual minute data

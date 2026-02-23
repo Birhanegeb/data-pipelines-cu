@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pandas as pd
 from airflow import DAG
-from airflow.operators.python import PythonOperator
+from airflow.operators.python import PythonOperator#type: ignore
 
 
 def _calculate_daily_average(**context):
@@ -28,7 +28,7 @@ def _calculate_daily_average(**context):
     current_date = now.strftime('%Y-%m-%d')
     
     # Path to hourly data
-    hourly_file = Path(f"/data/binance/hourly/{current_date}/hourly_avg.csv")
+    hourly_file = Path.home() / "airflow_data/binance/hourly" / current_date / "hourly_avg.csv"
     
     if not hourly_file.exists():
         print(f"No hourly data file found at {hourly_file}")
@@ -67,7 +67,7 @@ def _calculate_daily_average(**context):
         daily_df = pd.DataFrame([daily_stats])
         
         # Save to CSV
-        output_dir = Path("/data/binance/daily")
+        output_dir = Path.home() / "airflow_data/binance/daily"
         output_dir.mkdir(parents=True, exist_ok=True)
         
         output_file = output_dir / "daily_avg.csv"

@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pandas as pd
 from airflow import DAG
-from airflow.operators.python import PythonOperator
+from airflow.operators.python import PythonOperator#type: ignore
 
 
 def _calculate_hourly_average(**context):
@@ -29,8 +29,7 @@ def _calculate_hourly_average(**context):
     current_hour = now.strftime('%H')
     
     # Path to raw data
-    raw_file = Path(f"/data/binance/raw/{current_date}/daily_raw.csv")
-    
+    raw_file = Path.home() / "airflow_data/binance/raw" / current_date / "daily_raw.csv"    
     if not raw_file.exists():
         print(f"No raw data file found at {raw_file}")
         print("Waiting for minute-level data to be collected...")
@@ -70,7 +69,7 @@ def _calculate_hourly_average(**context):
         hourly_df = pd.DataFrame([hourly_stats])
         
         # Save to CSV
-        output_dir = Path(f"/data/binance/hourly/{current_date}")
+        output_dir = Path.home() / "airflow_data/binance/hourly" / current_date
         output_dir.mkdir(parents=True, exist_ok=True)
         
         output_file = output_dir / "hourly_avg.csv"
