@@ -20,7 +20,7 @@ fetch_events = BashOperator(
     bash_command=(
         "mkdir -p /data/events && "
         "curl -o /data/events/{{ds}}.json "
-        "http://events_api:5000/events?"
+        "http://localhost:5001/events?"
         "start_date={{ds}}&"
         "end_date={{next_ds}}"
     ),

@@ -7,14 +7,14 @@ from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 
 dag = DAG(
-    dag_id="01_unscheduled", start_date=datetime(2019, 1, 1), schedule_interval=None
+    dag_id="01_unscheduled", start_date=datetime(2019, 1, 1), schedule=None
 )
 
 fetch_events = BashOperator(
     task_id="fetch_events",
     bash_command=(
         "mkdir -p /data/events && "
-        "curl -o /data/events.json http://events_api:5000/events"
+        "curl -o /data/events.json http://localhost:5001/events"
     ),
     dag=dag,
 )

@@ -414,7 +414,7 @@ pip install -r requirements.txt
 
 ## Events API
 
-The DAGs in this lecture fetch events from a Flask API running at `http://events_api:5000/events`. 
+The DAGs in this lecture fetch events from a Flask API running at `http://localhost:5001/events`. 
 
 ### Running the Events API
 
@@ -489,7 +489,7 @@ Health check endpoint that returns the API status.
 
 ### Docker Usage
 
-If you're running Airflow in Docker and need the events API accessible at `http://events_api:5000`, you can:
+If you're running Airflow in Docker and need the events API accessible at `http://localhost:5001`, you can:
 
 1. Add the events API service to your `docker-compose.yml`:
    ```yaml
@@ -526,7 +526,7 @@ fetch_events = BashOperator(
     bash_command=(
         "mkdir -p /data/events && "
         "curl -o /data/events/{{ds}}.json "
-        "http://events_api:5000/events?"
+        "http://localhost:5001/events?"
         "start_date={{ds}}&"
         "end_date={{next_ds}}"
     ),
@@ -539,7 +539,7 @@ fetch_events = BashOperator(
 # You would run this manually:
 mkdir -p /data/events
 curl -o /data/events/2019-01-01.json \
-  "http://events_api:5000/events?start_date=2019-01-01&end_date=2019-01-02"
+  "http://localhost:5001/events?start_date=2019-01-01&end_date=2019-01-02"
 ```
 
 #### Key Differences: Why Airflow is Better
@@ -769,7 +769,7 @@ next_date = "2019-01-02"
 # Step 1: Fetch events
 subprocess.run([
     "curl", "-o", f"/data/events/{date}.json",
-    f"http://events_api:5000/events?start_date={date}&end_date={next_date}"
+    f"http://localhost:5001/events?start_date={date}&end_date={next_date}"
 ])
 
 # Step 2: Calculate stats

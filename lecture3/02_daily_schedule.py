@@ -17,7 +17,7 @@ fetch_events = BashOperator(
     task_id="fetch_events",
     bash_command=(
         "mkdir -p /data/events && "
-        "curl -o /data/events.json http://events_api:5000/events"
+        "curl -o /data/events.json http://localhost:5001/events"
     ),
     dag=dag,
 )

@@ -1,6 +1,6 @@
 """
 Flask app to simulate the events API for Airflow DAG examples.
-Serves events at http://events_api:5000/events with optional date filtering.
+Serves events at http://localhost:5001/events with optional date filtering.
 """
 
 from datetime import datetime, timedelta
@@ -95,5 +95,5 @@ def health():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5003, debug=True)
+    app.run(host='0.0.0.0', port=5001, debug=True)
 
