@@ -11,7 +11,9 @@ Pipeline: wait_for_supermarket_1 → process_supermarket → add_to_db
 
 import airflow.utils.dates
 from airflow import DAG
-
+from pathlib import Path
+import sqlite3
+import csv
 try:
     from airflow.sensors.filesystem import FileSensor
 except ImportError:
@@ -64,10 +66,34 @@ def _process_supermarket(**context):
 
 
 def _add_to_db(**context):
-    """Add promotions to database. Implement this task."""
-    pass
-
-
+    """Add promotions to SQLite database."""
+    ti = context['ti']  # TaskInstance
+    csv_path = ti.xcom_pull(task_ids='process_supermarket')
+    if not csv_path:
+        raise FileNotFoundError("No CSV file path found from process_supermarket task")
+    csv_path = Path(csv_path)
+    db_path = csv_path.parent / "supermarket.db"
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS promotions (
+            product_id TEXT,
+            promotion_count INTEGER,
+            date TEXT
+        )
+    """)
+    # Read CSV and insert into DB
+    with open(csv_path, newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            cursor.execute(
+                "INSERT INTO promotions (product_id, promotion_count, date) VALUES (?, ?, ?)",
+                (row['product_id'], int(row['promotion_count']), row['date'])
+            )
+    conn.commit()
+    conn.close()
+    print(f"Inserted promotions from {csv_path} into database {db_path}")
 dag = DAG(
     dag_id="lecture5_supermarket_exercise",
     start_date=airflow.utils.dates.days_ago(3),

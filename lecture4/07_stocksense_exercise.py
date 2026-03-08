@@ -15,7 +15,7 @@ Run for at least one successful execution, then include the output CSV in your P
 """
 
 from pathlib import Path
-
+import sqlite3
 import airflow.utils.dates
 from airflow import DAG
 
@@ -70,12 +70,33 @@ def _fetch_pageviews(pagenames, execution_date, **context):
     print(f"Counts: {result}")
     return result
 
-
 def _add_to_db(**context):
-    """Add pageview counts to database. Implement this task."""
-    pass
-
-
+    output_path = Path(context["templates_dict"]["output_path"])
+    if not output_path.exists():
+        raise FileNotFoundError(f"CSV file not found: {output_path}")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    db_path = output_path.parent / "stocksense.db"
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS pageviews (
+            pagename TEXT,
+            pageviewcount INTEGER,
+            datetime TEXT
+        )
+    """)
+    with open(output_path, "r") as f:
+        next(f)  # skip header
+        for line in f:
+            pagename, count, dt = line.strip().split(",")
+            pagename = pagename.strip('"')
+            cursor.execute(
+                "INSERT INTO pageviews (pagename, pageviewcount, datetime) VALUES (?, ?, ?)",
+                (pagename, int(count), dt)
+            )
+    conn.commit()
+    conn.close()
+    print(f"Inserted pageview counts into database at {db_path}")
 dag = DAG(
     dag_id="lecture4_stocksense_exercise",
     start_date=airflow.utils.dates.days_ago(1),
