@@ -1,2 +1,4 @@
 data-pipelines-with-apache-airflow/
-lecture7/assignment
+lecture7/assignment.terraform/
+*.tfstate
+*.tfstate.backup
