@@ -28,7 +28,7 @@ resource "local_file" "index_html" {
     <html>
     <head><title>My First Terraform Webserver</title></head>
     <body>
-      <h1>Hello from Terraform!</h1>
+      <h1>Hello from Terraform! 3</h1>
       <p>This page was deployed using Terraform (local Docker).</p>
     </body>
     </html>

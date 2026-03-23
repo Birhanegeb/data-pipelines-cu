@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Terraform, Airflow &amp; Data Pipelines — Lecture 7</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #fff;
+      --text: #1a1a1a;
+      --muted: #4a5568;
+      --accent: #2563eb;
+      --accent-soft: #eff6ff;
+      --border: #e2e8f0;
+      --code-bg: #f8fafc;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 11pt;
+    }
+
+    .doc {
+      max-width: 210mm;
+      margin: 0 auto;
+      padding: 18mm 22mm;
+      min-height: 100vh;
+    }
+
+    @media print {
+      .doc { padding: 15mm; max-width: none; }
+      .page-break { page-break-before: always; }
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--border);
+    }
+
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-top: 1.5rem;
+      margin-bottom: 0.75rem;
+      color: var(--text);
+    }
+
+    h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-top: 1.25rem;
+      margin-bottom: 0.5rem;
+      color: var(--muted);
+    }
+
+    p {
+      margin-bottom: 0.75rem;
+      color: var(--text);
+    }
+
+    ul, ol {
+      margin: 0.5rem 0 0.75rem 1.5rem;
+      color: var(--text);
+    }
+
+    li { margin-bottom: 0.35rem; }
+
+    pre, code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5pt;
+    }
+
+    code {
+      background: var(--code-bg);
+      color: var(--accent);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      overflow-x: auto;
+      margin: 0.75rem 0;
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+      border: none;
+      color: var(--text);
+    }
+
+    .note {
+      background: var(--accent-soft);
+      border-left: 4px solid var(--accent);
+      padding: 0.75rem 1rem;
+      margin: 1rem 0;
+      font-size: 10pt;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 1.5rem 0;
+    }
+  </style>
+</head>
+<body>
+  <article class="doc">
+
+    <h1>Terraform, Airflow &amp; Data Pipelines</h1>
+    <p><strong>Lecture 7</strong> — How Terraform fits the stack, how Airflow can use Terraform, and the Lecture 6 assignment as a worked example.</p>
+
+    <hr />
+
+    <h2>1. Why Terraform works with Airflow and data pipelines</h2>
+    <p>Data pipelines (e.g. Airflow DAGs) need <strong>infrastructure</strong> to run on: servers, containers, databases, object storage, message queues. Terraform is built to define and manage that infrastructure as code (IaC).</p>
+    <ul>
+      <li><strong>Same code → same environment</strong> — Reproducible dev, staging, and production; no “works on my machine.”</li>
+      <li><strong>One tool for many providers</strong> — AWS, GCP, Azure, Docker, Kubernetes; the same workflow can provision wherever Airflow and pipelines run.</li>
+      <li><strong>Dependencies as code</strong> — <code>depends_on</code> and resource ordering mirror DAG-style dependencies (run X before Y).</li>
+      <li><strong>State and collaboration</strong> — Remote state (e.g. S3 + DynamoDB lock) lets teams share one source of truth and avoid drift.</li>
+      <li><strong>Variables and workspaces</strong> — Different configs per environment without duplicating pipeline logic.</li>
+    </ul>
+    <p><strong>Bottom line:</strong> Terraform provisions and wires the “where” (servers, containers, queues, DBs); Airflow orchestrates the “when” and “what” (tasks and DAGs). They complement each other.</p>
+
+    <h2>2. How Airflow can use Terraform</h2>
+    <p>There are three main ways Airflow and Terraform work together.</p>
+
+    <h3>2.1 Terraform provisions the environment Airflow runs on</h3>
+    <p>Terraform creates and maintains the infrastructure that hosts Airflow and its dependencies. Examples:</p>
+    <ul>
+      <li><strong>Managed Airflow</strong> — GCP Cloud Composer, AWS MWAA. Terraform can create the Composer environment or MWAA cluster, VPC, subnets, and IAM roles so the whole stack is reproducible.</li>
+      <li><strong>Self-hosted on Kubernetes</strong> — Terraform provisions the EKS/GKE/AKS cluster, node pools, and optionally the Helm release for the Airflow chart (e.g. <code>helm_release</code> in Terraform). Airflow then runs inside that cluster.</li>
+      <li><strong>Self-hosted on VMs/containers</strong> — Terraform creates EC2/ECS instances or a Docker Compose host, security groups, RDS (or other DB) for Airflow metadata, and S3/GCS buckets for DAGs and logs. <code>depends_on</code> ensures the database and buckets exist before the Airflow containers start.</li>
+    </ul>
+    <p>In all cases, you run <code>terraform apply</code> (or a CI job that does it) when you change infrastructure; Airflow just runs on whatever Terraform has provisioned.</p>
+
+    <h3>2.2 Terraform outputs feed into Airflow config</h3>
+    <p>After Terraform creates resources, you often need their identifiers (ARNs, URLs, bucket names) inside Airflow. Two common patterns:</p>
+    <ul>
+      <li><strong>Terraform outputs → CI / config</strong> — Your CI pipeline runs <code>terraform output -json</code> and writes the values into a config file or secret store that the Airflow deployment reads (e.g. env vars, Kubernetes ConfigMap). Airflow Variables or Connections can be seeded from that config.</li>
+      <li><strong>Airflow Variables / Connections</strong> — You can create a small script or Terraform run that, after <code>apply</code>, calls the Airflow REST API (or CLI) to set Variables and Connections using Terraform output values. That way DAGs reference <code>Variable.get("data_lake_bucket")</code> instead of hardcoding bucket names.</li>
+    </ul>
+    <p>Example: Terraform creates an S3 bucket for raw data and outputs its name. A post-apply step sets Airflow Variable <code>raw_data_bucket</code> to that value. All DAGs that need the bucket use the variable, so they stay in sync with Terraform.</p>
+
+    <h3>2.3 Running Terraform from inside Airflow (TerraformOperator)</h3>
+    <p>Sometimes you want certain infrastructure changes to happen as part of a pipeline (e.g. “create a temporary cluster for this job, then destroy it”). Airflow can run Terraform from within a DAG:</p>
+    <ul>
+      <li><strong>TerraformOperator</strong> — Community providers such as <code>airflow-terraform</code> (or custom operators) let you run <code>terraform init</code>, <code>plan</code>, and <code>apply</code> (or <code>destroy</code>) as Airflow tasks. The DAG can pass parameters (e.g. workspace, TF_VAR_*) and use task dependencies so “create infra” runs before “run job” and “destroy infra” runs after.</li>
+      <li><strong>BashOperator / DockerOperator</strong> — Alternatively, a task can run a script that invokes Terraform CLI in a container or on a worker that has Terraform installed. Less integrated but flexible.</li>
+    </ul>
+    <p>Use this when infra is short-lived or environment-specific and you want it tied to the pipeline lifecycle. For long-lived, shared infrastructure (e.g. the Airflow cluster itself, central data lake), it’s usually better to manage Terraform outside Airflow (CI/CD or manual runs) and only reference the resulting resources from DAGs.</p>
+
+    <div class="note">
+      <strong>Summary:</strong> (1) Terraform provisions the Airflow runtime and its dependencies. (2) Terraform outputs can drive Airflow Variables/Connections so DAGs stay aligned with infra. (3) Optionally, Airflow can run Terraform via an operator or script for pipeline-scoped infra. Use (1) and (2) for most production setups; (3) for special cases.
+    </div>
+
+    <h2>3. Terraform in the data pipeline stack</h2>
+    <p><strong>Terraform (infrastructure):</strong> Compute (EC2, ECS, GKE, etc.), networking, security groups, IAM, databases, object storage, message queues — and the Docker/K8s environment where Airflow runs.</p>
+    <p><strong>Airflow (orchestration):</strong> DAGs, task scheduling, retries, alerts, and dependencies. It runs on and uses the resources Terraform provisions.</p>
+    <p>Typical workflow: use Terraform to create the environment once (or when you change it); use Airflow to run pipelines on that environment repeatedly.</p>
+
+    <hr class="page-break" />
+
+    <h2>4. Lecture 6 assignment — case summary</h2>
+    <p><strong>Goal:</strong> Deploy a first webserver locally using Terraform.</p>
+    <p><strong>What we built:</strong> A Docker container running <strong>nginx</strong>, serving a simple HTML page on <strong>localhost:8080</strong>.</p>
+    <p><strong>Ingredients:</strong></p>
+    <ul>
+      <li>An nginx image (e.g. <code>nginx:alpine</code>) pulled via the Docker provider.</li>
+      <li>A small HTML file generated by Terraform (<code>local_file</code>) so content is in code.</li>
+      <li>A container that mounts that HTML into nginx’s docroot and exposes port 8080 on the host.</li>
+    </ul>
+    <p><strong>Order matters:</strong> The HTML file must exist before the container starts, so the container can mount it. Terraform expresses this with <code>depends_on = [local_file.index_html]</code> on the container.</p>
+    <p><strong>Why it’s a good example for pipelines:</strong> The same pattern — declare resources, set dependencies, one <code>apply</code> — scales to “run a webserver, then n8n” (Lecture 7) or “run a DB and buckets, then Airflow” in production.</p>
+
+    <h2>5. Lecture 6 — how it’s done with Terraform</h2>
+    <p>Three main pieces in the assignment:</p>
+
+    <h3>5.1 Providers and image</h3>
+    <pre><code>terraform {
+  required_providers {
+    docker = { source = "kreuzwerker/docker", version = "~> 3.0" }
+    local  = { source = "hashicorp/local", version = "~> 2.0" }
+  }
+}
+
+provider "docker" {}
+
+resource "docker_image" "nginx" {
+  name = "nginx:alpine"
+}</code></pre>
+
+    <h3>5.2 Content and container</h3>
+    <pre><code>resource "local_file" "index_html" {
+  content  = "&lt;!DOCTYPE html&gt;&lt;html&gt;...&lt;/html&gt;"
+  filename = "${path.module}/index.html"
+}
+
+resource "docker_container" "webserver" {
+  image     = docker_image.nginx.image_id
+  name      = "terraform-assignment-webserver"
+  must_run  = true
+  depends_on = [local_file.index_html]
+
+  ports {
+    internal = 80
+    external = 8080
+  }
+
+  volumes {
+    host_path      = abspath(path.module)
+    container_path = "/usr/share/nginx/html"
+    read_only      = true
+  }
+}</code></pre>
+
+    <h3>5.3 Outputs and workflow</h3>
+    <pre><code>output "local_url" {
+  value       = "http://localhost:8080"
+  description = "URL to access your deployed HTML page (local)"
+}
+
+output "container_name" {
+  value       = docker_container.webserver.name
+  description = "Docker container name"
+}</code></pre>
+    <p><strong>Commands:</strong> <code>terraform init</code> → <code>terraform plan</code> → <code>terraform apply</code>. To tear down: <code>terraform destroy</code>.</p>
+    <p><strong>Takeaway:</strong> One declarative config (providers, resources, dependencies, outputs) gives you a reproducible local webserver. The same idea applies when provisioning the infrastructure for Airflow and data pipelines.</p>
+
+    <h2>6. From Lecture 6 to Lecture 7 and production</h2>
+    <ul>
+      <li><strong>Lecture 6:</strong> One webserver (nginx + local HTML) with <code>depends_on</code> so the file exists before the container.</li>
+      <li><strong>Lecture 7:</strong> Webserver then n8n — same pattern: <code>depends_on = [docker_container.webserver]</code> on the n8n container so dependencies start first.</li>
+      <li><strong>With Airflow:</strong> Terraform can provision the cluster/VM/containers, database, and queues; Airflow DAGs then run on that infrastructure. Dependency order in Terraform (e.g. DB and buckets before Airflow) matches “infra ready before pipelines.”</li>
+    </ul>
+    <p>Terraform works with Airflow and data pipelines because it owns the “where” and “in what order” the underlying resources come up. You use the same patterns — providers, resources, <code>depends_on</code>, outputs — from a simple local webserver (Lecture 6) all the way to production pipeline infrastructure.</p>
+
+    <hr />
+    <p style="font-size: 10pt; color: var(--muted);">Lecture 7 — Terraform, Airflow &amp; Data Pipelines. Reference: Lecture 6 assignment, Lecture 7 examples and assignment (Docker/AWS).</p>
+
+  </article>
+</body>
+</html>
