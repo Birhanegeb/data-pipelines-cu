@@ -10,7 +10,7 @@ Symbol: `GC=F` (COMEX gold futures), date range: `2024-01-01` to today
 ---
 
 ## Model Accuracy
-**0.8819 (88.2%)** on 559 rows evaluated
+**0.8804 (88%)** on 560 rows evaluated
 
 ---
 
@@ -47,7 +47,7 @@ Symbol: `GC=F` (COMEX gold futures), date range: `2024-01-01` to today
 
 ---
 
-## How the Model Was Tested
+## Test model
 
 Ran `test_model.py` from the terminal with the following command:
 
@@ -61,25 +61,27 @@ python tests/test_model.py \
 
 ```
 ✅ Model loaded from: data/models/gold_model.pkl
-✅ Data loaded: 559 rows from 'data/training_data.csv'
+✅ Data loaded: 560 rows from 'data/training_data.csv'
 
 ==================================================
          MODEL EVALUATION RESULTS
 ==================================================
-  Rows evaluated : 559
+  Rows evaluated : 560
   Features used  : ['close', 'sentiment_mean', 'news_count']
-  Accuracy       : 0.8819  (88.2%)
+  Accuracy       : 0.8804  (88.0%)
 ==================================================
 
               precision    recall  f1-score   support
-    Down (0)       0.79      0.97      0.87       234
+
+    Down (0)       0.79      0.97      0.87       235
       Up (1)       0.97      0.82      0.89       325
-    accuracy                           0.88       559
-   macro avg       0.88      0.89      0.88       559
-weighted avg       0.90      0.88      0.88       559
+
+    accuracy                           0.88       560
+   macro avg       0.88      0.89      0.88       560
+weighted avg       0.90      0.88      0.88       560
 
 ✅ Good accuracy for a financial prediction model.
-```
+
 
 ---
 
@@ -94,19 +96,19 @@ The DAG is scheduled with `@weekly` — it runs automatically every Sunday at mi
 The biggest limitation of this pipeline is the **NYT RSS feed**. RSS is designed as a "latest headlines" feed — it only returns the most recent **20 to 50 articles** at the time of fetching. It has no historical archive.
 
 This means:
-- For the ~559 trading days in the dataset (2024–2026), only articles from the **last few days** have real sentiment values
+- For the ~560 trading days in the dataset (2024–2026), only articles from the **last few days** have real sentiment values
 - The majority of training rows have `sentiment_mean=0` and `news_count=0` because no news was available for those historical dates
 - As a result, the **sentiment feature is weak** across most of the dataset, and the model is primarily learning from gold price alone
 
-**To fix this in a production version**, the NYT Article Search API would be used instead. It allows querying articles by keyword and date range, making it possible to backfill two full years of war-related news sentiment. This would make `sentiment_mean` a genuinely meaningful feature across the entire training dataset.
+**To fix this in a production version**, the NYT Article Search API would be used instead( which is not free). It allows querying articles by keyword and date range, making it possible to backfill two full years of war-related news sentiment. This would make `sentiment_mean` a genuinely meaningful feature across the entire training dataset.
 
 ---
 
 ## Notes on Model Accuracy
 
-The 88.2% accuracy is higher than typical for financial prediction models. This is because:
+The 88% accuracy is higher than typical for financial prediction models. This is because:
 
-1. The accuracy in `test_model.py` is evaluated on the **full dataset** (559 rows), not just the held-out test set
+1. The accuracy in `test_model.py` is evaluated on the **full dataset** (560 rows), not just the held-out test set
 2. Gold prices followed a **strong upward trend** during 2024–2026, meaning the model can score well by frequently predicting UP
 3. The `close` price feature alone carries most of the predictive power due to this trend
 
@@ -116,9 +118,9 @@ During training inside the DAG, a proper **80/20 chronological train/test split*
 
 ## Bonus — Live Prediction for Tomorrow
 
-> This is not required by the assignment. It was added to demonstrate how the trained model can be used in practice for live inference.
+> It is added to demonstrate how the trained model can be used in practice for live inference.
 
-A separate script `predict_tomorrow.py` was written to show how the trained model makes a real prediction for the next trading day.
+A separate script `predict_tomorrow.py` is subbmitted to show how the trained model makes a real prediction for the next trading day.
 
 ### How it works
 
@@ -127,7 +129,7 @@ A separate script `predict_tomorrow.py` was written to show how the trained mode
 3. Feeds both into the trained `gold_model.pkl`
 4. Outputs whether gold is predicted to go **UP or DOWN** tomorrow with a confidence percentage
 
-### Run it
+### Running it
 
 ```bash
 python predict_tomorrow.py
@@ -136,15 +138,15 @@ python predict_tomorrow.py
 ### Example output
 
 ```
-Today's gold close: $3045.20
-War news sentiment: -0.43
-War news count:     6
+Today's gold close: $4432.30
+War news sentiment: 0.006
+War news count:     42
 
 ========================================
    TOMORROW'S GOLD PREDICTION
 ========================================
-  Direction : ⬆️  UP
-  Confidence: 73.2%
+  Direction : ⬇️  DOWN
+  Confidence: 72.0%
 ========================================
 ```
 
@@ -152,6 +154,6 @@ This demonstrates the full ML lifecycle — not just training the model but actu
 
 ---
 **Gold API used:** yfinance `GC=F`
-**Model accuracy:** 0.8819 (88%)
+**Model accuracy:** 88%
 **Notes:** NYT RSS only returns recent articles. Most historical rows have sentiment=0. A production version would use the NYT Article Search API to backfill historical sentiment data.
-**Bonus:** `predict_tomorrow.py` demonstrates live inference using today's gold price and news sentiment — not required by the assignment.
+
