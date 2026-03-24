@@ -19,7 +19,7 @@ Symbol: `GC=F` (COMEX gold futures), date range: `2024-01-01` to today
 ### Step 1: Fetch Gold Prices
 - Used `yfinance` to download daily gold futures prices from January 1, 2024 to today
 - Saved columns: `date`, `open`, `high`, `low`, `close`
-- Result: **559 trading day rows** saved to `gold_prices.csv`
+- Result: **560 trading day rows** saved to `gold_prices.csv`
 
 ### Step 2: Fetch War-Related News
 - Fetched two NYT RSS feeds: **World** and **HomePage**
@@ -116,7 +116,7 @@ During training inside the DAG, a proper **80/20 chronological train/test split*
 
 ---
 
-## Bonus — Live Prediction for Tomorrow
+##Bonus — Live Prediction for Tomorrow
 
 > It is added to demonstrate how the trained model can be used in practice for live inference.
 
