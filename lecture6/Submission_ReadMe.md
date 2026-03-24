@@ -1,5 +1,5 @@
-# Mid-Semester Assignment — Gold Price & War News ML Pipeline
-### Lecture 6 | Data Engineering | March 24, 2026
+# Mid-Semester Assignment - Gold Price & War News ML Pipeline
+### Datapipeline Engineering | March 24, 2026| @Birhane G.
 
 ---
 
