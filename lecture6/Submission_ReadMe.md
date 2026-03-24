@@ -85,6 +85,7 @@ weighted avg       0.90      0.88      0.88       560
 
 ---
 
+```
 ## Pipeline Schedule
 
 The DAG is scheduled with `@weekly` — it runs automatically every Sunday at midnight and retrains the model from scratch using the most up-to-date data. Each new run overwrites the previous model file with a freshly trained version.
@@ -116,7 +117,7 @@ During training inside the DAG, a proper **80/20 chronological train/test split*
 
 ---
 
-##Bonus — Live Prediction for Tomorrow
+## Bonus — Live Prediction for Tomorrow
 
 > It is added to demonstrate how the trained model can be used in practice for live inference.
 
