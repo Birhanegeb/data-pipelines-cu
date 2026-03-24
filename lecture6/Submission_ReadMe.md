@@ -49,7 +49,7 @@ Symbol: `GC=F` (COMEX gold futures), date range: `2024-01-01` to today
 
 ## Test model
 
-Ran `test_model.py` from the terminal with the following command:
+Run `test_model.py` from the terminal with the following command:
 
 ```bash
 python tests/test_model.py \
