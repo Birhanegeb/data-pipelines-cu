@@ -1,85 +1,148 @@
-#!/usr/bin/env python3
-"""
-Lecture 6 - Mid-Semester Assignment: Model Testing Script
-
-Tests the trained gold price prediction model.
-Usage:
-  python test_model.py --model models/gold_model.pkl --data data/
-  python test_model.py --model /data/gold_war_pipeline/models/gold_model.pkl
-"""
+# =============================================================================
+# test_model.py
+# Load the trained gold prediction model and report its accuracy.
+#
+# Usage:
+#   python test_model.py \
+#       --model /data/gold_war_pipeline/models/gold_model.pkl \
+#       --data  /data/gold_war_pipeline
+# =============================================================================
 
 import argparse
-import pickle
-from pathlib import Path
-
-import pandas as pd
-
-
-def load_model(model_path: Path):
-    """Load the saved model and feature names."""
-    with open(model_path, "rb") as f:
-        data = pickle.load(f)
-    return data["model"], data["features"]
-
-
-def test_model(model_path: Path, data_dir: Path) -> dict:
+import os
+import sys
+import joblib
+import pandas as pd # type: ignore
+from sklearn.metrics import accuracy_score, classification_report
+# Features the model was trained on – must match gold_war_etl_dag.py
+FEATURE_COLUMNS = ["close", "sentiment_mean", "news_count"]
+def load_model(model_path: str):
     """
-    Run model tests: load model, load training data, compute accuracy.
-    Returns dict with accuracy and sample predictions.
+    Load the trained model from a .pkl file.
+    Exits with a clear error message if the file is missing or corrupted.
     """
-    model, features = load_model(model_path)
+    if not os.path.exists(model_path):
+        print(f"❌ Model file not found: '{model_path}'")
+        print("   Have you run the Airflow pipeline at least once?")
+        sys.exit(1)
 
-    training_csv = data_dir / "training_data.csv"
-    if not training_csv.exists():
-        raise FileNotFoundError(
-            f"Training data not found: {training_csv}. Run ETL first."
-        )
+    try:
+        model = joblib.load(model_path)
+        print(f"✅ Model loaded from: {model_path}")
+        return model
 
-    df = pd.read_csv(training_csv)
-    X = df[features].fillna(0)
+    except Exception as e:
+        print(f"❌ Failed to load model: {e}")
+        sys.exit(1)
+
+
+def load_data(data_dir: str) -> pd.DataFrame:
+    """
+    Load training_data.csv from the data directory.
+    Exits with a clear error message if the file is missing or unreadable.
+    """
+    csv_path = os.path.join(data_dir, "training_data.csv")
+
+    if not os.path.exists(csv_path):
+        print(f"❌ Data file not found: '{csv_path}'")
+        print("   Have you run the full Airflow pipeline?")
+        sys.exit(1)
+
+    try:
+        df = pd.read_csv(csv_path)
+        print(f"✅ Data loaded: {len(df)} rows from '{csv_path}'")
+        return df
+
+    except Exception as e:
+        print(f"❌ Failed to read data file: {e}")
+        sys.exit(1)
+
+
+def validate_columns(df: pd.DataFrame):
+    """
+    Check that all required feature columns exist in the DataFrame.
+    Exits if any columns are missing.
+    """
+    missing = [col for col in FEATURE_COLUMNS if col not in df.columns]
+
+    if missing:
+        print(f"❌ Missing columns in training_data.csv: {missing}")
+        print(f"   Expected columns: {FEATURE_COLUMNS}")
+        sys.exit(1)
+
+    if "target" not in df.columns:
+        print("❌ Column 'target' not found in training_data.csv")
+        sys.exit(1)
+
+
+def evaluate(model, df: pd.DataFrame):
+    """
+    Run predictions and print accuracy + classification report.
+    """
+    X = df[FEATURE_COLUMNS]
     y = df["target"]
 
-    accuracy = model.score(X, y)
-    preds = model.predict(X)
-    sample = df[["date", "close", "target"]].head(10).copy()
-    sample["predicted"] = preds[:10]
+    try:
+        predictions = model.predict(X)
+    except Exception as e:
+        print(f"❌ Prediction failed: {e}")
+        sys.exit(1)
 
-    return {
-        "accuracy": accuracy,
-        "n_samples": len(df),
-        "sample_predictions": sample,
-    }
+    accuracy = accuracy_score(y, predictions)
+
+    print()
+    print("=" * 50)
+    print("         MODEL EVALUATION RESULTS")
+    print("=" * 50)
+    print(f"  Rows evaluated : {len(df)}")
+    print(f"  Features used  : {FEATURE_COLUMNS}")
+    print(f"  Accuracy       : {accuracy:.4f}  ({accuracy * 100:.1f}%)")
+    print("=" * 50)
+    print()
+    print(classification_report(
+        y, predictions,
+        target_names=["Down (0)", "Up (1)"]
+    ))
+
+    # Give the student a plain-language interpretation
+    if accuracy >= 0.60:
+        print("✅ Good accuracy for a financial prediction model.")
+    elif accuracy >= 0.50:
+        print("⚠️  Accuracy is above 50% but there is room to improve.")
+        print("   Tip: try adding lagged prices or moving average features.")
+    else:
+        print("❌ Accuracy is below 50% – worse than random guessing.")
+        print("   Tip: check that shuffle=False was used in train/test split.")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Test gold price prediction model")
+    parser = argparse.ArgumentParser(
+        description="Test the trained gold price prediction model"
+    )
     parser.add_argument(
         "--model",
-        type=Path,
-        default=Path("models/gold_model.pkl"),
-        help="Path to saved model .pkl",
+        required=True,
+        help="Path to the trained model file (e.g. gold_model.pkl)",
     )
     parser.add_argument(
         "--data",
-        type=Path,
-        default=Path("/data/gold_war_pipeline"),
-        help="Data directory containing training_data.csv",
+        required=True,
+        help="Directory containing training_data.csv",
     )
     args = parser.parse_args()
 
-    if not args.model.exists():
-        print(f"ERROR: Model not found: {args.model}")
-        print("Run the ETL pipeline first to train and save the model.")
-        return 1
+    # Step 1: load model
+    model = load_model(args.model)
 
-    result = test_model(args.model, args.data)
-    print(f"\n=== Model Test Results ===")
-    print(f"Accuracy: {result['accuracy']:.3f}")
-    print(f"Samples:  {result['n_samples']}")
-    print(f"\nSample predictions (first 10):")
-    print(result["sample_predictions"].to_string(index=False))
-    return 0
+    # Step 2: load data
+    df = load_data(args.data)
+
+    # Step 3: check columns
+    validate_columns(df)
+
+    # Step 4: evaluate and print results
+    evaluate(model, df)
 
 
 if __name__ == "__main__":
-    exit(main())
+    main()
