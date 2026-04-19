@@ -1,0 +1,12 @@
+{
+  "name": "lecture10-nomad-ollama-slides",
+  "private": true,
+  "scripts": {
+    "slides": "marp slides.md -o slides.html --no-stdin",
+    "slides:pdf": "marp slides.md --pdf -o slides.pdf --no-stdin",
+    "slides:watch": "marp -w slides.md"
+  },
+  "devDependencies": {
+    "@marp-team/marp-cli": "^4.0.0"
+  }
+}
