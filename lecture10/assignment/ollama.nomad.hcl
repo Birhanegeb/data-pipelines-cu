@@ -8,6 +8,19 @@ job "ollama" {
   group "ollama" {
     count = 1
 
+# Give the deployment 15 minutes instead of 5
+    update {
+      healthy_deadline  = "10m"
+      progress_deadline = "15m"
+    }
+
+    restart {
+      attempts = 2
+      interval = "5m"
+      delay    = "15s"
+      mode     = "fail"
+    }
+
     network {
       port "ollama" {
         to     = 11434

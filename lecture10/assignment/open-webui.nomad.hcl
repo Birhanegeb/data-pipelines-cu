@@ -7,6 +7,11 @@ job "open-webui" {
   group "web" {
     count = 1
 
+    update {
+      healthy_deadline  = "10m"
+      progress_deadline = "15m"
+    }
+    
     network {
       port "ui" {
         to     = 8080
