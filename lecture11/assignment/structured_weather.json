@@ -1,0 +1,17 @@
+{
+  "metadata": {
+    "timestamp_utc": "2026-04-26T09:44:59.176614",
+    "data_source": "open-meteo",
+    "llm_model": "llama3.2",
+    "version": "1.0"
+  },
+  "weather_data": {
+    "city_label": "Paris, France",
+    "observation_date": "2026-04-26T09:30+02:00",
+    "temp_c_current": 12.4,
+    "temp_c_max": 22.3,
+    "temp_c_min": 9.2,
+    "conditions_short": "light rain",
+    "precipitation_mm": 6.9
+  }
+}
